@@ -99,9 +99,9 @@ try:
         remrp = 0
 
     if float(BTC) > float(0.0010000):
-        payout = 'ready'
+        payout = 'Ready'
     else:
-        payout = 'not ready'
+        payout = 'Not Ready'
 
     if (remroll > 59):
         
@@ -111,13 +111,17 @@ try:
         msg.write('\n\n'+email)
         msg.write('\n\n🔸 Balance : *'+BTC+' BTC*')
         msg.write('\n🔸 *'+str(rp)+'* Reward Points')
-        msg.write('\n🔺 Next Roll : *'+findtime(remroll)+'*')        
-        msg.write('\n\n ⚡️ *'+rpb_comment+'*')
-        if (fbb_comment != ''):
+        msg.write('\n🔺 Next Roll : *'+findtime(remroll)+'*')  
+        if rpb_status == True:
+            msg.write('\n\n ⚡️ *'+rpb_comment+'*')
+        if (fbb_status == True):
             msg.write('\n ⚡️ *'+fbb_comment+'*')
-        msg.write('\n\n🔹 Next RP : *'+findtime(remrp)+'*')
-        msg.write('\n🔹 Captcha Status : '+str(captcha_status))
-        msg.write('\n🔹 Payout Status : '+payout)
+        if rpb_status == True:
+            msg.write('\n\n🔹 Next RP : *'+findtime(remrp)+'*')
+        if captcha_status == True:
+            msg.write('\n🔹 Captcha Status : '+str(captcha_status))
+        if payout == 'Ready':
+            msg.write('\n🔹 Payout Status : '+payout)
         
         setcronjob(remroll)
         
@@ -129,43 +133,41 @@ try:
         print (remroll, 'seconds remaining until next roll')
         time.sleep(remroll)
 
-    if rpb_status == True:
+    if rpb_status == False:
+        print (datetime.now().strftime('[%d %b] %H:%M:%S')+' Activating reward point bonus')
         if rp > 11:
-            rpbnos = [100,50,25,10,1]
+            rpbno = 10
+            rpbnos = [1,10,25,50,100]
             for num in rpbnos:
-                if ((num*12)+12 < rp):
+                if ((num*12)+12 <= rp):
                     rpbno = num
-                    break
+                    
             try:
                 with requests.Session() as s:
                     rpb = s.get(f'https://freebitco.in/?op=redeem_rewards&id=free_points_{rpbno}&points=&csrf_token={csrf_token}', headers = headers, proxies = proxies)
                     if rpb.text[0] == 's':
-                        pass
+                        rpb_comment = 'Activated '+str(rpbno)+' RP Bonus'
                     else:
                         rpb = s.get(f'https://freebitco.in/?op=redeem_rewards&id=free_points_10&points=&csrf_token={csrf_token}', headers = headers, proxies = proxies)
                         if rpb.text[0] == 's':
-                            pass
+                            rpb_comment = 'Unable to Activate '+str(rpbno)+' RP Bonus'
+                        else:
+                            rpb_comment = 'Unable to Activate RP Bonus'
             except:
                 rpb_comment = 'Unable to Activate RP Bonus'
-                pass
-
+                    
     with requests.Session() as s:
         r = s.get("https://freebitco.in/?op=home", headers = headers, proxies = proxies)
         rp = int(soup.find('div', attrs={'class':'reward_table_box br_0_0_5_5 user_reward_points font_bold'}).text.replace(',', ""))
         soup = BeautifulSoup(r.content, 'lxml')
         rpb_status = bool(soup.find(id='bonus_container_free_points'))
-        if (rpb_status == True):
-            rpb_comment = soup.find(id='bonus_container_free_points').text.replace(' ends in','').replace('Active bonus ','')
         fbb_status = bool(soup.find(id='bonus_container_fp_bonus'))
-        if (fbb_status == True):
-            fbb_comment = soup.find(id='bonus_container_fp_bonus').text.replace(' ends in','').replace('Active bonus ','')
         try:
             p = str(soup.find(id='bonus_container_free_points'))
             remrp = int(p[p.rfind('free_points')+13:p.rfind(')})')])+3
         except:
             remrp = 0
 
-        
     with requests.Session() as s:
         data = {'csrf_token': csrf_token, 'op': 'free_play', 'fingerprint': fingerprint(), 'client_seed': client_seed, 'fingerprint2': randint(1000000000,9999999999), 'pwc': '0', 'd5c2233cd15f': '1594322467:ed5b7da67d20be0ff3925e62e818f5557208bf00d1e1c8c6f770e9f9b29df50c', 'f53d8b816e9d': hashlib.sha256(s.get(f'https://freebitco.in/cgi-bin/fp_check.pl?s=f53d8b816e9d&csrf_token={csrf_token}', headers={'x-csrf-token': csrf_token, 'X-Requested-With': 'XMLHttpRequest'}).text.encode('utf-8')).hexdigest()}
         roll = requests.post('https://www.freebitco.in/', data = data, headers = headers, proxies = proxies)
@@ -177,6 +179,10 @@ try:
         print(datetime.now().strftime('[%d %b] %H:%M:%S')+' --- Free Roll Not Played')
         remroll = 300
 
+    with requests.Session() as s:
+        cab = s.get('https://freebitco.in/?op=get_current_address_and_balance&csrf_token='+csrf_token, headers = headers)
+        BTC = cab.text.split(':')[2]
+        
     msg = StringIO()
     if (rpb_comment == 'Unable to Activate RP Bonus' or remroll == 300):
         msg.write('🛑 ')
@@ -188,12 +194,16 @@ try:
     msg.write('\n\n🔸 Balance : *'+BTC+' BTC*')
     msg.write('\n🔸 *'+str(rp)+'* Reward Points')
     msg.write('\n🔺 Next Roll : *'+findtime(remroll)+'*')        
-    msg.write('\n\n ⚡️ *'+rpb_comment+'*')
-    if (fbb_comment != ''):
+    if rpb_status == True:
+        msg.write('\n\n ⚡️ *'+rpb_comment+'*')
+    if (fbb_status == True):
         msg.write('\n ⚡️ *'+fbb_comment+'*')
-    msg.write('\n\n🔹 Next RP : *'+findtime(remrp)+'*')
-    msg.write('\n🔹 Captcha Status : '+str(captcha_status))
-    msg.write('\n🔹 Payout Status : '+payout)
+    if rpb_status == True:
+        msg.write('\n\n🔹 Next RP : *'+findtime(remrp)+'*')
+    if captcha_status == True:
+        msg.write('\n🔹 Captcha Status : '+str(captcha_status))
+    if payout == 'Ready':
+        msg.write('\n🔹 Payout Status : '+payout)
 
     setcronjob(remroll)
         
@@ -208,4 +218,3 @@ except:
     Telegram('🛑 '+datetime.now().strftime('[%d %b] %H:%M:%S')+'\n --- Server FBTC didn\'t work ---')
     setcronjob(300)
     sys.exit()
-
