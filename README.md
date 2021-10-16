@@ -12,5 +12,6 @@ It uses account cookies to avoid logging in. Recent update replaces RP bonus wit
 Insert your account’s cookies, Telegram bot token, your Telegram chatID, linux username for cronjob.
 I’m running this bot on a GCP basic instance, the BTC earned from this bot covers the monthly cost.
 
-<b>Telegram message:</b>
+<b>Telegram message:</b><br/>
+
 ![](telegram_msg.png)
