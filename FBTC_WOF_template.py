@@ -96,7 +96,7 @@ try:
     except:
         remwof = 0
 
-    if float(BTC) > float(0.0010000):
+    if float(BTC) > float(0.00030000+float(TxnFee)):
         payout = 'Ready'
     else:
         payout = 'Not Ready'
@@ -129,8 +129,7 @@ try:
         print (remroll, 'seconds remaining until next roll')
         time.sleep(remroll)
 
-    if wof_status == False:        
-        print (datetime.now().strftime('[%d %b] %H:%M:%S')+' Activating WOF bonus')
+    if (wof_status == False and datetime.now().hour % 6 == 0):
         try:
             with requests.Session() as s:
                 stats = s.get('https://freebitco.in/cf_stats_public/?f=public_stats_initial&csrf_token={csrf_token}', headers = headers, proxies = proxies)
@@ -138,20 +137,22 @@ try:
         except:
             base = 700
             
-        if rp > 2*base:
+        if rp >= base:
             for num in range(1,6):
                 if (num*base <= rp):
                     wof_no = num
                     
             try:
+                print (datetime.now().strftime('[%d %b] %H:%M:%S')+' Activating WOF bonus')
                 with requests.Session() as s:
                     wof = s.get(f'https://freebitco.in/?op=redeem_rewards&id=free_wof_{wof_no}&points=&csrf_token={csrf_token}', headers = headers, proxies = proxies)
                     if wof.text[0] == 's':
-                        wof_comment = 'Activated '+str(wof_no)+' WOF with '+str(num*base)+' RP'
+                        wof_comment = 'Activated '+str(wof_no)+' WOF'
                     else:
-                        wof = s.get(f'https://freebitco.in/?op=redeem_rewards&id=free_wof_2&points=&csrf_token={csrf_token}', headers = headers, proxies = proxies)
+                        wof = s.get(f'https://freebitco.in/?op=redeem_rewards&id=free_wof_1&points=&csrf_token={csrf_token}', headers = headers, proxies = proxies)
                         if wof.text[0] == 's':
-                            wof_comment = 'Unable to Activate '+str(wof_no)+' WOF Bonus'
+                            wof_comment = 'Unable to Activate '+str(wof_no)+' WOF Bonus\n'
+                            wof_comment = 'Activated 1 WOF'
                         else:
                             wof_comment = 'Unable to Activate WOF Bonus'
             except:
@@ -202,9 +203,10 @@ try:
     with requests.Session() as s:
         wof_page = s.get('https://freebitco.in/cgi-bin/api.pl?op=get_wof_free_spins', headers = headers, proxies = proxies)
         free_spins = int(wof_page.json()['token_count'])
-        tokens = wof_page.json()['tokens']
+        if (free_spins > 0):
+            tokens = wof_page.json()['tokens']
 
-    if free_spins > 0:
+    if (free_spins > 0 and datetime.now().hour % 6 == 0):
         try:
             for token in tokens:
                 print (datetime.now().strftime('[%d %b] %H:%M:%S')+' --- Playing Wheel of Fortune')
